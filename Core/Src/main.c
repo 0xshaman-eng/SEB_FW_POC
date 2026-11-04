@@ -21,7 +21,8 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "logger.h"
+#include "timer_manager.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -31,7 +32,11 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-
+/* Temporary Logger + Timer Manager blink test. Set to 0 and remove before
+ * the next module is started. */
+#define TM_BLINK_TEST           1
+#define TM_BLINK_PERIOD_MS      500U   /* Logger OK: 1 Hz blink           */
+#define TM_BLINK_FAIL_MS        100U   /* Logger init failed: fast blink  */
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -40,13 +45,20 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
+UART_HandleTypeDef huart3;
 
 /* USER CODE BEGIN PV */
-
+#if TM_BLINK_TEST
+static TimerHandle_t led_timer    = SEB_TIMER_HANDLE_INVALID;
+static uint32_t      blink_period = TM_BLINK_PERIOD_MS;
+static uint32_t      blink_count  = 0U;
+#endif
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
+static void MX_GPIO_Init(void);
+static void MX_USART3_UART_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -84,8 +96,33 @@ int main(void)
   /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
+  MX_GPIO_Init();
+  MX_USART3_UART_Init();
   /* USER CODE BEGIN 2 */
+  /* Service init order per architecture section 2.4: Logger, then Timer
+   * Manager (Error Manager is not ported yet). */
+  if (Logger_Init() != STATUS_OK)
+  {
+#if TM_BLINK_TEST
+    /* Logging unavailable: signal it on the LED instead of halting. */
+    blink_period = TM_BLINK_FAIL_MS;
+#endif
+  }
 
+  if (TimerManager_Init() != STATUS_OK)
+  {
+    Error_Handler();
+  }
+
+  LOG_INFO("SEB F3 boot, Logger + Timer Manager test");
+
+#if TM_BLINK_TEST
+  led_timer = TimerManager_Start(blink_period);
+  if (led_timer == SEB_TIMER_HANDLE_INVALID)
+  {
+    Error_Handler();
+  }
+#endif
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -95,6 +132,31 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+    /* Timer state is updated first in every loop iteration (section 2.5). */
+    TimerManager_Process();
+
+#if TM_BLINK_TEST
+    if (TimerManager_IsExpired(led_timer))
+    {
+      HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
+      blink_count++;
+
+      LOG_INFO("toggle %lu, elapsed %lu ms",
+               (unsigned long)blink_count,
+               (unsigned long)TimerManager_GetElapsed(led_timer));
+
+      /* Periodic operation: release the expired timer and start a new one. */
+      TimerManager_Stop(led_timer);
+      led_timer = TimerManager_Start(blink_period);
+      if (led_timer == SEB_TIMER_HANDLE_INVALID)
+      {
+        Error_Handler();
+      }
+    }
+#endif
+
+    /* Logger drains its transmit ring without blocking. */
+    Logger_Process();
   }
   /* USER CODE END 3 */
 }
@@ -107,6 +169,7 @@ void SystemClock_Config(void)
 {
   RCC_OscInitTypeDef RCC_OscInitStruct = {0};
   RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
+  RCC_PeriphCLKInitTypeDef PeriphClkInit = {0};
 
   /** Initializes the RCC Oscillators according to the specified parameters
   * in the RCC_OscInitTypeDef structure.
@@ -133,6 +196,76 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
+  PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_USART3;
+  PeriphClkInit.Usart3ClockSelection = RCC_USART3CLKSOURCE_PCLK1;
+  if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK)
+  {
+    Error_Handler();
+  }
+}
+
+/**
+  * @brief USART3 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_USART3_UART_Init(void)
+{
+
+  /* USER CODE BEGIN USART3_Init 0 */
+
+  /* USER CODE END USART3_Init 0 */
+
+  /* USER CODE BEGIN USART3_Init 1 */
+
+  /* USER CODE END USART3_Init 1 */
+  huart3.Instance = USART3;
+  huart3.Init.BaudRate = 115200;
+  huart3.Init.WordLength = UART_WORDLENGTH_8B;
+  huart3.Init.StopBits = UART_STOPBITS_1;
+  huart3.Init.Parity = UART_PARITY_NONE;
+  huart3.Init.Mode = UART_MODE_TX_RX;
+  huart3.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart3.Init.OverSampling = UART_OVERSAMPLING_16;
+  huart3.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
+  huart3.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
+  if (HAL_UART_Init(&huart3) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN USART3_Init 2 */
+
+  /* USER CODE END USART3_Init 2 */
+
+}
+
+/**
+  * @brief GPIO Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_GPIO_Init(void)
+{
+  GPIO_InitTypeDef GPIO_InitStruct = {0};
+/* USER CODE BEGIN MX_GPIO_Init_1 */
+/* USER CODE END MX_GPIO_Init_1 */
+
+  /* GPIO Ports Clock Enable */
+  __HAL_RCC_GPIOA_CLK_ENABLE();
+  __HAL_RCC_GPIOB_CLK_ENABLE();
+
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin : LED_Pin */
+  GPIO_InitStruct.Pin = LED_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(LED_GPIO_Port, &GPIO_InitStruct);
+
+/* USER CODE BEGIN MX_GPIO_Init_2 */
+/* USER CODE END MX_GPIO_Init_2 */
 }
 
 /* USER CODE BEGIN 4 */
@@ -153,7 +286,8 @@ void Error_Handler(void)
   }
   /* USER CODE END Error_Handler_Debug */
 }
-#ifdef USE_FULL_ASSERT
+
+#ifdef  USE_FULL_ASSERT
 /**
   * @brief  Reports the name of the source file and the source line number
   *         where the assert_param error has occurred.

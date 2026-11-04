@@ -12,3 +12,4 @@ Release/
 # IDE local files
 .settings/language.settings.xml
 *.launch
+.settings/com.st.stm32cube.ide.mcu.sfrview.prefs
