@@ -59,7 +59,8 @@ typedef enum
 /**
  * @brief Initializes the Logger.
  *
- * Takes the CubeMX-initialized USART3 handle, clears the format buffer
+ * Takes the CubeMX-initialized debug UART handle (SEB_BOARD_LOG_UART in
+ * board_config.h), clears the format buffer
  * and transmit ring, registers a private transmit-complete callback and
  * makes logging available. Does not call HAL_UART_Init() and does not
  * change SEB_CFG_LOGGER_MIN_LEVEL. Calling this function again re-clears
@@ -90,8 +91,9 @@ void     Logger_Log(LogLevel_t level, const char *message);
 /**
  * @brief Logs a raw 16-bit error code at ERROR.
  *
- * The payload is formatted as ERR:0xNNNN. This is a stub until the Error
- * Manager defines SEB_ErrorCode_t (architecture section 3.9.3).
+ * The payload is formatted as ERR:0xNNNN (architecture section 3.9.3).
+ * Modules report errors through ErrorManager_Report(), which logs them at
+ * their severity; this function is for direct diagnostic use.
  *
  * @param error
  *        Raw 16-bit code.
@@ -121,7 +123,7 @@ void     Logger_LogError(SEB_ErrorCode_t error);
 void     Logger_LogFormatted(LogLevel_t level, const char *format, ...);
 
 /**
- * @brief Transmits queued bytes on USART3 without blocking.
+ * @brief Transmits queued bytes on the debug UART without blocking.
  *
  * Starts at most one interrupt-driven transfer per call. Returns
  * immediately when the Logger is not ready. Never uses DMA.
