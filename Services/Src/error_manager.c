@@ -41,6 +41,12 @@ static const ErrorEntry_t error_table[] =
     { SEB_ERROR_SYSTEM_LOGGER_INIT,      ERROR_SEVERITY_WARNING  },
     { SEB_ERROR_SYSTEM_TIMER_INIT,       ERROR_SEVERITY_CRITICAL },
     { SEB_ERROR_SYSTEM_TIMER_POOL_EMPTY, ERROR_SEVERITY_ERROR    },
+    /* Lost outgoing data is an error; a bad received frame is a warning
+     * because the sender times out and retransmits it. */
+    { SEB_ERROR_PACKET_QUEUE_FULL,       ERROR_SEVERITY_ERROR    },
+    { SEB_ERROR_PACKET_LENGTH,           ERROR_SEVERITY_WARNING  },
+    { SEB_ERROR_PACKET_CRC,              ERROR_SEVERITY_WARNING  },
+    { SEB_ERROR_PACKET_FUNCTION,         ERROR_SEVERITY_WARNING  },
 };
 
 /** Number of entries in error_table. */

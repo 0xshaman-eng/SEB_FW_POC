@@ -51,6 +51,18 @@ typedef enum
 /** TimerManager_Start() found no free timer. */
 #define SEB_ERROR_SYSTEM_TIMER_POOL_EMPTY   ((SEB_ErrorCode_t)0x0103U)
 
+/** PacketManager_Packetize() found the TX queue full; the data is lost. */
+#define SEB_ERROR_PACKET_QUEUE_FULL         ((SEB_ErrorCode_t)0x0301U)
+
+/** Received frame too short, too long, or its size does not match LENGTH. */
+#define SEB_ERROR_PACKET_LENGTH             ((SEB_ErrorCode_t)0x0302U)
+
+/** Received frame CRC does not match. */
+#define SEB_ERROR_PACKET_CRC                ((SEB_ErrorCode_t)0x0303U)
+
+/** Received frame carries an unknown function code. */
+#define SEB_ERROR_PACKET_FUNCTION           ((SEB_ErrorCode_t)0x0304U)
+
 /**
  * @brief Defines the generic result of a module operation.
  */
