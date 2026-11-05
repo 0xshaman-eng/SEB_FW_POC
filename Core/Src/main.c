@@ -38,9 +38,6 @@
 #define TM_BLINK_TEST           1
 #define TM_BLINK_PERIOD_MS      500U   /* Logger OK: 1 Hz blink           */
 #define TM_BLINK_FAIL_MS        100U   /* Logger init failed: fast blink  */
-/* Temporary Error Manager test. 1 = report test errors at boot. Remove
- * before the next module is started. */
-#define SEB_TEST_ERROR_MANAGER  0
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -122,37 +119,6 @@ int main(void)
   }
 
   LOG_INFO("SEB F3 boot, Logger + Timer Manager test");
-
-#if SEB_TEST_ERROR_MANAGER
-  {
-    uint32_t i;
-
-    /* Positive: one code per severity, each logged at its own level. */
-    ErrorManager_Report(SEB_ERROR_SYSTEM_LOGGER_INIT);       /* WARNING  */
-    ErrorManager_Report(SEB_ERROR_SYSTEM_TIMER_POOL_EMPTY);  /* ERROR    */
-    LOG_INFO("EM last=0x%04X sev=%u (expect 0x0103 sev=2)",
-             (unsigned int)ErrorManager_GetLastError(),
-             (unsigned int)ErrorManager_GetSeverity(ErrorManager_GetLastError()));
-
-    /* Fault: unknown code must be classified as ERROR, not ignored. */
-    ErrorManager_Report((SEB_ErrorCode_t)0x0999U);
-    LOG_INFO("EM unknown sev=%u (expect 2)",
-             (unsigned int)ErrorManager_GetSeverity((SEB_ErrorCode_t)0x0999U));
-
-    /* Fault: a CRITICAL error must stay recorded after a later WARNING. */
-    ErrorManager_Report(SEB_ERROR_SYSTEM_TIMER_INIT);        /* CRITICAL */
-    ErrorManager_Report(SEB_ERROR_SYSTEM_LOGGER_INIT);
-    LOG_INFO("EM last=0x%04X (expect 0x0102)",
-             (unsigned int)ErrorManager_GetLastError());
-
-    /* Fault: with the report above, 21 in total, logged only at x1 (above)
-     * and x2 x4 x8 x16 here. */
-    for (i = 0U; i < 20U; i++)
-    {
-      ErrorManager_Report(SEB_ERROR_SYSTEM_TIMER_POOL_EMPTY);
-    }
-  }
-#endif
 
 #if TM_BLINK_TEST
   led_timer = TimerManager_Start(blink_period);
