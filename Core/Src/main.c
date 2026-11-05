@@ -21,6 +21,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "error_manager.h"
 #include "logger.h"
 #include "timer_manager.h"
 /* USER CODE END Includes */
@@ -99,10 +100,13 @@ int main(void)
   MX_GPIO_Init();
   MX_USART3_UART_Init();
   /* USER CODE BEGIN 2 */
-  /* Service init order per architecture section 2.4: Logger, then Timer
-   * Manager (Error Manager is not ported yet). */
+  /* Service init order per architecture section 2.4: Error Manager,
+   * Logger, then Timer Manager. */
+  (void)ErrorManager_Init();
+
   if (Logger_Init() != STATUS_OK)
   {
+    ErrorManager_Report(SEB_ERROR_SYSTEM_LOGGER_INIT);
 #if TM_BLINK_TEST
     /* Logging unavailable: signal it on the LED instead of halting. */
     blink_period = TM_BLINK_FAIL_MS;
@@ -154,6 +158,9 @@ int main(void)
       }
     }
 #endif
+
+    /* Errors reported in this iteration are handled before logging (2.5). */
+    ErrorManager_Process();
 
     /* Logger drains its transmit ring without blocking. */
     Logger_Process();

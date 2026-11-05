@@ -15,7 +15,9 @@
 #include <stddef.h>
 #include <string.h>
 
-#include "main.h"
+/* The only hardware header an SEB module includes (constitution IV.C). It
+ * provides the HAL of the target family and SEB_BOARD_LOG_UART. */
+#include "board_config.h"
 
 #if (SEB_CFG_LOGGER_ENABLED == 1)
 
@@ -32,10 +34,10 @@
  * Formatting and ring writes run in the main loop. The registered
  * TX-complete callback only clears tx_busy. The next Process() call
  * retires the finished run and may start the next one.
+ *
+ * The debug UART is SEB_BOARD_LOG_UART from board_config.h. It is owned and
+ * initialized by CubeMX; the Logger does not call HAL_UART_Init().
  */
-
-/** CubeMX-owned USART3 handle. The Logger does not call HAL_UART_Init(). */
-extern UART_HandleTypeDef huart3;
 
 /**
  * @brief Defines the Logger lifecycle states.
@@ -81,13 +83,14 @@ static LoggerState_t state;
 static volatile uint32_t log_drop_count;
 
 /**
- * @brief Clears tx_busy when USART3 finishes a transfer.
+ * @brief Clears tx_busy when the debug UART finishes a transfer.
  *
- * Registered on huart3 from Logger_Init(). Does no formatting and does
- * not write the ring.
+ * Registered on SEB_BOARD_LOG_UART from Logger_Init(). Does no formatting
+ * and does not write the ring.
  *
  * @param huart
- *        Handle that completed; unused because only huart3 is registered.
+ *        Handle that completed; unused because the callback is registered
+ *        on the debug UART only.
  */
 static void Logger_TxCpltCallback(UART_HandleTypeDef *huart)
 {
@@ -401,7 +404,7 @@ static void Logger_Enqueue(const char *line)
 Status_t Logger_Init(void)
 {
     Status_t status = STATUS_ERROR;
-    const HAL_UART_StateTypeDef uart_state = HAL_UART_GetState(&huart3);
+    const HAL_UART_StateTypeDef uart_state = HAL_UART_GetState(SEB_BOARD_LOG_UART);
 
     if ((uart_state != HAL_UART_STATE_RESET) &&
         (uart_state != HAL_UART_STATE_ERROR))
@@ -415,7 +418,7 @@ Status_t Logger_Init(void)
         tx_busy = false;
         log_drop_count = 0U;
 
-        if (HAL_UART_RegisterCallback(&huart3,
+        if (HAL_UART_RegisterCallback(SEB_BOARD_LOG_UART,
                                       HAL_UART_TX_COMPLETE_CB_ID,
                                       Logger_TxCpltCallback) == HAL_OK)
         {
@@ -581,7 +584,7 @@ void Logger_Process(void)
                 run = tx_count;
             }
 
-            if (HAL_UART_Transmit_IT(&huart3, &log_tx_buf[tx_head], run) == HAL_OK)
+            if (HAL_UART_Transmit_IT(SEB_BOARD_LOG_UART, &log_tx_buf[tx_head], run) == HAL_OK)
             {
                 tx_busy = true;
                 tx_run_len = run;
