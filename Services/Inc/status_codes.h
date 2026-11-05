@@ -51,6 +51,21 @@ typedef enum
 /** TimerManager_Start() found no free timer. */
 #define SEB_ERROR_SYSTEM_TIMER_POOL_EMPTY   ((SEB_ErrorCode_t)0x0103U)
 
+/** Local UART initialization (callbacks or reception start) failed. */
+#define SEB_ERROR_LOCAL_UART_INIT           ((SEB_ErrorCode_t)0x0201U)
+
+/** Local UART transmission could not be started. */
+#define SEB_ERROR_LOCAL_UART_TX             ((SEB_ErrorCode_t)0x0202U)
+
+/** Local UART receive error: overrun, framing or noise. */
+#define SEB_ERROR_LOCAL_UART_RX             ((SEB_ErrorCode_t)0x0203U)
+
+/** No response from the local device or the remote SEB within the timeout. */
+#define SEB_ERROR_LOCAL_UART_TIMEOUT        ((SEB_ErrorCode_t)0x0204U)
+
+/** Local UART recovery attempts exhausted; the module stays in ERROR. */
+#define SEB_ERROR_LOCAL_UART_FATAL          ((SEB_ErrorCode_t)0x0205U)
+
 /** PacketManager_Packetize() found the TX queue full; the data is lost. */
 #define SEB_ERROR_PACKET_QUEUE_FULL         ((SEB_ErrorCode_t)0x0301U)
 
@@ -62,6 +77,15 @@ typedef enum
 
 /** Received frame carries an unknown function code. */
 #define SEB_ERROR_PACKET_FUNCTION           ((SEB_ErrorCode_t)0x0304U)
+
+/**
+ * @brief Defines the board operating mode (architecture section 1.4).
+ */
+typedef enum
+{
+    BOARD_MODE_MAIN = 0,        /**< Main board: SBC side, Modbus master. */
+    BOARD_MODE_SUB              /**< Sub board: RockBLOCK side, slave.    */
+} BoardMode_t;
 
 /**
  * @brief Defines the generic result of a module operation.

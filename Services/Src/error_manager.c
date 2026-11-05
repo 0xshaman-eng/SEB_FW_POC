@@ -41,6 +41,13 @@ static const ErrorEntry_t error_table[] =
     { SEB_ERROR_SYSTEM_LOGGER_INIT,      ERROR_SEVERITY_WARNING  },
     { SEB_ERROR_SYSTEM_TIMER_INIT,       ERROR_SEVERITY_CRITICAL },
     { SEB_ERROR_SYSTEM_TIMER_POOL_EMPTY, ERROR_SEVERITY_ERROR    },
+    /* A UART line fault is a warning because the module recovers it;
+     * exhausted recovery is critical. */
+    { SEB_ERROR_LOCAL_UART_INIT,         ERROR_SEVERITY_ERROR    },
+    { SEB_ERROR_LOCAL_UART_TX,           ERROR_SEVERITY_WARNING  },
+    { SEB_ERROR_LOCAL_UART_RX,           ERROR_SEVERITY_WARNING  },
+    { SEB_ERROR_LOCAL_UART_TIMEOUT,      ERROR_SEVERITY_WARNING  },
+    { SEB_ERROR_LOCAL_UART_FATAL,        ERROR_SEVERITY_CRITICAL },
     /* Lost outgoing data is an error; a bad received frame is a warning
      * because the sender times out and retransmits it. */
     { SEB_ERROR_PACKET_QUEUE_FULL,       ERROR_SEVERITY_ERROR    },
