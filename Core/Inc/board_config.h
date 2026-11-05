@@ -57,10 +57,19 @@ extern UART_HandleTypeDef huart3;
 /** Debug UART used by the Logger. Interrupt-driven only, never DMA. */
 #define SEB_BOARD_LOG_UART      (&huart3)
 
+/**
+ * CubeMX-owned Local UART handle, defined in main.c: USART2, PA2 TX /
+ * PA3 RX, 19200 8N1, RX on DMA circular, TX interrupt-driven.
+ */
+extern UART_HandleTypeDef huart2;
+
+/** UART to the local device (SBC on Main, RockBLOCK on Sub), section 3.2. */
+#define SEB_BOARD_LOCAL_UART    (&huart2)
+
 /*
  * Still to be added, by the module that first uses each one (architecture
  * sections 1.5.3 item 4 and 3.5): mode-select pin, address DIP switches
- * 1-3, SLP, NET, RI, Local UART and Link UART. Their pins and instances are
+ * 1-3, SLP, NET, RI and Link UART. Their pins and instances are
  * TBD (architecture appendix item 25), so none is defined yet. Each is
  * added as a mapping to a CubeMX user label or handle, for example:
  *
@@ -74,6 +83,10 @@ extern UART_HandleTypeDef huart3;
  */
 #if !defined(HAL_UART_MODULE_ENABLED)
 #error "board_config: no UART is enabled in CubeMX. Enable the debug USART."
+#endif
+
+#if !defined(HAL_DMA_MODULE_ENABLED)
+#error "board_config: no DMA is enabled in CubeMX. Add USART2_RX DMA (circular) for the Local UART."
 #endif
 
 #if !defined(USE_HAL_UART_REGISTER_CALLBACKS)

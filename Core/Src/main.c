@@ -22,6 +22,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "error_manager.h"
+#include "local_uart_manager.h"
 #include "logger.h"
 #include "packet_manager.h"
 #include "timer_manager.h"
@@ -36,6 +37,8 @@
 /* USER CODE BEGIN PD */
 /* Fixed SEB address until the GPIO Manager reads the DIP switches. */
 #define SEB_PM_LOCAL_ADDRESS    1U
+/* Fixed board mode until the GPIO Manager reads the mode-select pin. */
+#define SEB_LU_MODE             BOARD_MODE_MAIN
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -119,6 +122,9 @@ int main(void)
     Error_Handler();
   }
 
+  /* A failed start is retried by the module's own recovery (section 3.2). */
+  (void)LocalUARTManager_Init(SEB_LU_MODE, SEB_PM_LOCAL_ADDRESS);
+
   LOG_INFO("SEB F3 boot");
   /* USER CODE END 2 */
 
@@ -131,6 +137,9 @@ int main(void)
     /* USER CODE BEGIN 3 */
     /* Timer state is updated first in every loop iteration (section 2.5). */
     TimerManager_Process();
+
+    /* Local device data is moved before errors and logs are handled (2.5). */
+    LocalUARTManager_Run();
 
     /* Errors reported in this iteration are handled before logging (2.5). */
     ErrorManager_Process();
